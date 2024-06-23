@@ -1,4 +1,4 @@
-module github.com/nikvogri/snake
+module github.com/nikvogri/go-snake-game
 
 go 1.19
 

@@ -14,7 +14,9 @@ type Point struct {
 	y int
 }
 
-var board = createBoard(32)
+var BOARD_SIZE = 32
+
+var board = createBoard(BOARD_SIZE)
 var snake = createSnake()
 var fruit = createFruit()
 
