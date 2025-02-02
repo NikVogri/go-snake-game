@@ -1,83 +1,88 @@
 package main
 
 import (
-	"fmt"
+	"math"
 	"math/rand"
 )
 
+type FieldType string
+
 const (
-	FIELD_EMPTY = "-"
-	FIELD_HEAD  = "O"
-	FIELD_BODY  = "#"
-	FIELD_FRUIT = "F"
+	FIELD_EMPTY      FieldType = "-"
+	FIELD_SNAKE_HEAD FieldType = "O"
+	FIELD_SNAKE_BODY FieldType = "#"
+	FIELD_FRUIT      FieldType = "F"
 )
 
 type Board struct {
-	fields [][]string
+	fields [][]FieldType
 	size   int
 }
 
 func createBoard(size int) *Board {
-	return &Board{
-		fields: [][]string{},
+	board := &Board{
+		fields: [][]FieldType{},
 		size:   size,
+	}
+
+	board.init()
+
+	return board
+}
+
+func (board *Board) update(snake *Snake, fruit *Fruit) {
+	board.init()
+
+	board.setField(fruit.position, FIELD_FRUIT)
+	board.setField(snake.headPosition, FIELD_SNAKE_HEAD)
+
+	for _, node := range snake.body {
+		board.setField(node.position, FIELD_SNAKE_BODY)
 	}
 }
 
-func (board *Board) draw() {
-	newBoard := make([][]string, board.size)
+func (board *Board) init() {
+	board.fields = make([][]FieldType, board.size)
 
 	for i := 0; i < board.size; i++ {
-		cols := make([]string, board.size)
+		cols := make([]FieldType, board.size)
 
 		for i := 0; i < board.size; i++ {
 			cols[i] = FIELD_EMPTY
 		}
 
-		newBoard[i] = cols
-	}
-
-	board.fields = newBoard
-}
-
-func (board *Board) redraw() {
-	board.draw()
-
-	board.fields[fruit.position.y][fruit.position.x] = FIELD_FRUIT
-	board.fields[snake.headPosition.y][snake.headPosition.x] = FIELD_HEAD
-
-	for _, node := range snake.body {
-		board.fields[node.position.y][node.position.x] = FIELD_BODY
+		board.fields[i] = cols
 	}
 }
 
-func (board *Board) print() {
-	for i := 0; i < board.size; i++ {
-		fmt.Println("")
-	}
-
-	for i := 0; i < board.size; i++ {
-		fmt.Println(board.fields[i])
-	}
+func (board *Board) setField(vector Vector2, fieldType FieldType) {
+	board.fields[vector.y][vector.x] = fieldType
 }
 
-func (board *Board) isOutsideBorder(point Point) bool {
+func (board *Board) isOutsideBorder(position Vector2) bool {
 	board_wall := board.size - 1
 
-	if point.x > board_wall || point.x < 0 {
+	if position.x > board_wall || position.x < 0 {
 		return true
 	}
 
-	if point.y > board_wall || point.y < 0 {
+	if position.y > board_wall || position.y < 0 {
 		return true
 	}
 
 	return false
 }
 
-func (board *Board) pickRandomField() Point {
-	return Point{
+func (board *Board) getRandomField() Vector2 {
+	return Vector2{
 		x: rand.Intn(board.size),
 		y: rand.Intn(board.size),
+	}
+}
+
+func (board *Board) getCenterPosition() Vector2 {
+	return Vector2{
+		x: int(math.Round(float64(board.size / 2))),
+		y: int(math.Round(float64(board.size / 2))),
 	}
 }

@@ -3,86 +3,74 @@ package main
 import (
 	"fmt"
 	"log"
-	"math"
 	"time"
 
 	"github.com/eiannone/keyboard"
 )
 
-type Point struct {
-	x int
-	y int
-}
-
 var BOARD_SIZE = 32
+var BASE_GAME_TICK_DURATION = 150 * time.Millisecond
 
+var game = createGame()
 var board = createBoard(BOARD_SIZE)
-var snake = createSnake()
-var fruit = createFruit()
+
+var snake = createSnake(board)
+var fruit = createFruit(board)
+
+var ticker = createTicker()
+var printer = createPrinter()
 
 func main() {
-	board.draw()
 	go listenForKeyboardEvents()
 
-	fmt.Println(snake.headPosition)
+	ticker.setSpeed(BASE_GAME_TICK_DURATION)
 
-	for {
+	ticker.start(func(t *Ticker) {
 		if game.ended {
-			fmt.Println("========================")
-			fmt.Println("====== GAME OVER =======")
-			fmt.Println("========================")
-			fmt.Println("You've ended the game   ")
-			fmt.Println("Score: ", game.score)
-			break
+			printer.printGameEndedMessage(game, "You've ended the game")
+			t.stop()
+			return
 		}
 
 		nextPosition := snake.getNextHeadPosition()
 
 		if board.isOutsideBorder(nextPosition) {
-			fmt.Println("========================")
-			fmt.Println("====== GAME OVER =======")
-			fmt.Println("========================")
-			fmt.Println("You went over the border")
-			fmt.Println("Score: ", game.score)
-			break
+			printer.printGameEndedMessage(game, "You went over the border")
+			t.stop()
+			return
 		}
 
-		// check if fruit was eaten
-		if nextPosition.x == fruit.position.x && nextPosition.y == fruit.position.y {
+		if fruit.hasBeenEaten(nextPosition) {
 			snake.growByOne()
-			fruit.respawn()
+			fruit.respawn(board)
 			game.incrementScore()
 
-			if game.score%5 == 0 {
-				game.increaseSpeed()
+			if game.shouldSpeedBeIncreased() {
+				ticker.increaseSpeedByFactor(0.05)
 			}
 		}
 
 		snake.moveToNextPosition(nextPosition)
 
-		// check if body part was eaten
 		if snake.hasEatenItself() {
-			fmt.Println("========================")
-			fmt.Println("====== GAME OVER =======")
-			fmt.Println("========================")
-			fmt.Println("You've eaten yourself   ")
-			fmt.Println("Score: ", game.score)
-			break
+			printer.printGameEndedMessage(game, "You've eaten yourself")
+			t.stop()
+			return
 		}
 
-		board.redraw()
-		board.print()
+		board.update(snake, fruit)
+		printer.printBoard(board)
+	})
 
-		time.Sleep(time.Millisecond * time.Duration(math.Round(125*game.speedMultiplier)))
-	}
 }
 
 func listenForKeyboardEvents() {
+	defer keyboard.Close()
+
 	if err := keyboard.Open(); err != nil {
 		log.Fatal("Failed to open keyboard:", err)
 		return
 	}
-	defer keyboard.Close()
 
 	for {
 		_, key, err := keyboard.GetKey()
@@ -96,24 +84,17 @@ func listenForKeyboardEvents() {
 			break
 		}
 
-		var newDirection string
-
-		if key == keyboard.KeyArrowUp {
-			newDirection = DIRECTION_NORTH
+		directionMap := map[keyboard.Key]Direction{
+			keyboard.KeyArrowUp:    DIRECTION_NORTH,
+			keyboard.KeyArrowDown:  DIRECTION_SOUTH,
+			keyboard.KeyArrowLeft:  DIRECTION_WEST,
+			keyboard.KeyArrowRight: DIRECTION_EAST,
 		}
 
-		if key == keyboard.KeyArrowDown {
-			newDirection = DIRECTION_SOUTH
+		if directionMap[key] == "" {
+			continue
 		}
 
-		if key == keyboard.KeyArrowLeft {
-			newDirection = DIRECTION_WEST
-		}
-
-		if key == keyboard.KeyArrowRight {
-			newDirection = DIRECTION_EAST
-		}
-
-		snake.changeDirection(newDirection)
+		snake.changeDirection(directionMap[key])
 	}
 }

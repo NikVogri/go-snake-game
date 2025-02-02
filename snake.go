@@ -1,66 +1,57 @@
 package main
 
-import "math"
+type Direction string
 
 const (
-	DIRECTION_NORTH = "DIRECTION_NORTH"
-	DIRECTION_EAST  = "DIRECTION_EAST"
-	DIRECTION_SOUTH = "DIRECTION_SOUTH"
-	DIRECTION_WEST  = "DIRECTION_WEST"
+	DIRECTION_NORTH Direction = "DIRECTION_NORTH"
+	DIRECTION_EAST  Direction = "DIRECTION_EAST"
+	DIRECTION_SOUTH Direction = "DIRECTION_SOUTH"
+	DIRECTION_WEST  Direction = "DIRECTION_WEST"
 )
 
+var DIRECTION_MAP = map[Direction]*Vector2{
+	DIRECTION_NORTH: {y: -1, x: 0},
+	DIRECTION_SOUTH: {y: 1, x: 0},
+	DIRECTION_WEST:  {y: 0, x: -1},
+	DIRECTION_EAST:  {y: 0, x: 1},
+}
+
 type SnakeBodyNode struct {
-	position Point
+	position Vector2
 }
 
 type Snake struct {
-	headPosition  Point
-	direction     string
+	headPosition  Vector2
+	direction     Direction
 	body          []SnakeBodyNode
-	pastPositions []Point
+	pastPositions []Vector2
 }
 
-func createSnake() *Snake {
+func createSnake(board *Board) *Snake {
 	return &Snake{
-		headPosition: Point{
-			// setting starting position
-			x: int(math.Round(float64(board.size / 2))),
-			y: int(math.Round(float64(board.size / 2))),
-		},
+		headPosition:  board.getCenterPosition(),
 		direction:     DIRECTION_EAST,
 		body:          []SnakeBodyNode{},
-		pastPositions: []Point{},
+		pastPositions: []Vector2{},
 	}
 }
 
-func (snake *Snake) changeDirection(direction string) {
+func (snake *Snake) changeDirection(direction Direction) {
 	snake.direction = direction
 }
 
-func (snake *Snake) getNextHeadPosition() Point {
-	var newPosition Point
-
-	if snake.direction == DIRECTION_NORTH {
-		newPosition = Point{x: snake.headPosition.x, y: snake.headPosition.y - 1}
+func (snake *Snake) getNextHeadPosition() Vector2 {
+	if DIRECTION_MAP[snake.direction] == nil {
+		return Vector2{x: 0, y: 0}
 	}
 
-	if snake.direction == DIRECTION_SOUTH {
-		newPosition = Point{x: snake.headPosition.x, y: snake.headPosition.y + 1}
-	}
+	nextHeadPos := snake.headPosition.copy()
+	nextHeadPos.add(DIRECTION_MAP[snake.direction])
 
-	if snake.direction == DIRECTION_WEST {
-		newPosition = Point{x: snake.headPosition.x - 1, y: snake.headPosition.y}
-	}
-
-	if snake.direction == DIRECTION_EAST {
-		newPosition = Point{x: snake.headPosition.x + 1, y: snake.headPosition.y}
-	}
-
-	return newPosition
+	return nextHeadPos
 }
 
 func (snake *Snake) growByOne() {
-
 	node := SnakeBodyNode{
 		position: snake.headPosition,
 	}
@@ -68,9 +59,9 @@ func (snake *Snake) growByOne() {
 	snake.body = append(snake.body, node)
 }
 
-func (snake *Snake) moveToNextPosition(point Point) {
-	snake.headPosition = point
-	snake.pastPositions = append(snake.pastPositions, point)
+func (snake *Snake) moveToNextPosition(pos Vector2) {
+	snake.headPosition = pos
+	snake.pastPositions = append(snake.pastPositions, pos)
 	snake.moveBodyNodesToNextPosition()
 
 }
@@ -92,12 +83,11 @@ func (snake *Snake) hasEatenItself() bool {
 	hasEatenItself := false
 
 	for _, node := range snake.body {
-		if node.position.x == snake.headPosition.x && node.position.y == snake.headPosition.y {
+		if snake.headPosition.overlaps(node.position) {
 			hasEatenItself = true
 			break
 		}
 	}
 
 	return hasEatenItself
-
 }
