@@ -64,6 +64,14 @@ func main() {
 
 }
 
+// TODO: refactor this when time.
+var directionMap = map[keyboard.Key]Direction{
+	keyboard.KeyArrowUp:    DIRECTION_NORTH,
+	keyboard.KeyArrowDown:  DIRECTION_SOUTH,
+	keyboard.KeyArrowLeft:  DIRECTION_WEST,
+	keyboard.KeyArrowRight: DIRECTION_EAST,
+}
+
 func listenForKeyboardEvents() {
 	defer keyboard.Close()
 
@@ -82,13 +90,6 @@ func listenForKeyboardEvents() {
 		if key == keyboard.KeyEsc {
 			game.end()
 			break
-		}
-
-		directionMap := map[keyboard.Key]Direction{
-			keyboard.KeyArrowUp:    DIRECTION_NORTH,
-			keyboard.KeyArrowDown:  DIRECTION_SOUTH,
-			keyboard.KeyArrowLeft:  DIRECTION_WEST,
-			keyboard.KeyArrowRight: DIRECTION_EAST,
 		}
 
 		if directionMap[key] == "" {
